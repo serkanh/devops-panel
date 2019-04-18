@@ -35,5 +35,5 @@ functions:
     handler: ecs/get.main
     events:
       - http:
-          path: ecs/get
+          path: ecs/{arn}
           method: get
