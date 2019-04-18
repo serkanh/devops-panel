@@ -25,9 +25,9 @@ provider:
 
 
 functions:
-  ecs-get-all:
-    handler: ecs/handler.getClusters
+  ecs-list:
+    handler: ecs/list.main
     events:
       - http:
-          path: ecs/all
+          path: ecs
           method: get
