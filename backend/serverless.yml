@@ -29,5 +29,11 @@ functions:
     handler: ecs/list.main
     events:
       - http:
-          path: ecs
+          path: ecs/list
+          method: get
+  ecs-get:
+    handler: ecs/get.main
+    events:
+      - http:
+          path: ecs/get
           method: get
