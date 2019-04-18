@@ -1,0 +1,33 @@
+
+
+service: backend # NOTE: update this with your service name
+
+
+plugins:
+  - serverless-offline
+  - serverless-webpack
+
+package:
+  individually: true
+
+
+
+# serverless-webpack configuration
+# Enable auto-packing of external modules
+custom:
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules: true'
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+
+
+functions:
+  ecs-get-all:
+    handler: ecs/handler.getClusters
+    events:
+      - http:
+          path: ecs/all
+          method: get
