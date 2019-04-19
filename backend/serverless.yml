@@ -31,11 +31,10 @@ functions:
       - http:
           path: ecs/list
           method: get
-          cors: true
+          cors: false
   ecs-get:
     handler: ecs/get.main
     events:
       - http:
           path: ecs/{arn}
           method: get
-          cors: true
