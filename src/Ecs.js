@@ -1,6 +1,33 @@
 import React, { Component } from "react";
 import "./Ecs.css";
 import { getClusters } from "./api/api";
+import PropTypes from 'prop-types';
+
+/**
+ * TODO: If one of the clusters returning pending task count highlight that instance
+ * @param {array} clusters
+ */
+function ClusterGrid ({ clusters }) {
+  return (
+    <ul className='popular-list'>
+      {clusters.map(({ clusterName, registeredContainerInstancesCount,runningTasksCount,pendingTasksCount,clusterArn,activeServicesCount}, index) => (
+        <li key={index} className='popular-item'>
+          <div className='popular-rank'>{index + 1} - {clusterName}</div>
+          <ul className='space-list-items'>
+					  <li>Active Service Count: {activeServicesCount} </li>
+            <li>Registered Container Count: {registeredContainerInstancesCount}</li>
+            <li>Running Tasks Count: {runningTasksCount}</li>
+            <li>Pending Tasks Count: {pendingTasksCount}</li>
+          </ul>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+ClusterGrid.propTypes = {
+  clusters: PropTypes.array.isRequired,
+}
 
 class Ecs extends Component {
   state = {
@@ -22,9 +49,7 @@ class Ecs extends Component {
     console.log(this.state.clusters);
     return (
       <div className="Ecs-grid">
-				{clusters.map((item, index, arr) =>
-					<li key={index}>{item.clusterName} - {item.registeredContainerInstancesCount} </li>
-				)}
+				<ClusterGrid clusters={clusters} />
       </div>
     );
   }

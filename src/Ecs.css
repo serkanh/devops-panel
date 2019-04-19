@@ -2,6 +2,27 @@
 	text-decoration: rgb(17, 17, 81);
 }
 
-.Ecs-grid {
-	background-color: aqua;
+
+.popular-item {
+  margin: 20px;
+  text-align: center;
+}
+
+.popular-rank {
+  font-size: 20px;
+  margin: 10px;
+}
+
+.popular-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+}
+
+.space-list-items {
+  margin-bottom: 7px;
+}
+
+li {
+  list-style-type: none;
 }
