@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import './App.css';
-import Ecs from './components/Ecs'
+import Ecs from './Ecs'
 class App extends Component {
   render() {
     return (

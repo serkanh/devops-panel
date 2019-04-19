@@ -31,9 +31,11 @@ functions:
       - http:
           path: ecs/list
           method: get
+          cors: true
   ecs-get:
     handler: ecs/get.main
     events:
       - http:
           path: ecs/{arn}
           method: get
+          cors: true
