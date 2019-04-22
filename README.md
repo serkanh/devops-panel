@@ -3,7 +3,7 @@
 2. `serverless offline --start`
 
 ### Frontend
-
+1. `yarn start`
 
 #Setup webpack from scratch:
 1. Install webpack and webpack cli

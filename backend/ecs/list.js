@@ -6,9 +6,6 @@ const ecs = new ECS({region:'us-east-1' })
 export async function main(event, context) {
 	// This is to prevent cors on local development.
 	// TODO: Remove when going to prod
-
-
-
 	try {
 		let clusters = await ecs.listClusters().promise()
 		let clusterDetails = await ecs.describeClusters({clusters:clusters.clusterArns}).promise()
