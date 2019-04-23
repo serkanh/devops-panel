@@ -29,7 +29,7 @@ functions:
     handler: ecs/list.main
     events:
       - http:
-          path: ecs/list
+          path: ecs/
           method: get
           cors: false
   ecs-get:

@@ -8,7 +8,7 @@ function handleError (error) {
 
 
 export async function getClusters(){
-	return axios.get('http://localhost:3000/ecs/list')
+	return axios.get('http://localhost:3000/ecs/')
 				 .then(response=>response.data)
 	       .catch(handleError)
 }

@@ -57,9 +57,10 @@ async function getElbDnsName(elbObj) {
     return null;
   }
   try {
-
     let elasticlb = await elb
-      .describeLoadBalancers({ LoadBalancerNames:  [elbObj[0].loadBalancerName] })
+      .describeLoadBalancers({
+        LoadBalancerNames: [elbObj[0].loadBalancerName]
+      })
       .promise();
     return elasticlb.LoadBalancerDescriptions[0].DNSName;
   } catch (error) {
@@ -87,16 +88,24 @@ async function describeServices(clusterName) {
         desiredCount: service.desiredCount,
         createdAt: service.createdAt,
         runningCount: service.runningCount,
-        pendingCount: service.pendingCount,
-        loadBalancer: {
-          loadBalancerName: service.loadBalancers[0]
-            ? await getElbDnsName(service.loadBalancers)
-            : `null`,
-          containerPort: service.loadBalancers[0].containerPort,
-          albName: service.loadBalancers[0].targetGroupArn
-            ? await getTargetGroupAlb(service.loadBalancers[0].targetGroupArn)
+				pendingCount: service.pendingCount,
+				//Check if there are any elb/alb if there is none return null
+        loadBalancer:
+          service.loadBalancers.length > 1
+            ? {
+                loadBalancerName: service.loadBalancers[0]
+                  ? await getElbDnsName(service.loadBalancers)
+                  : `null`,
+                containerPort: service.loadBalancers[0].containerPort
+                  ? service.loadBalancers[0].containerPort
+                  : `null`,
+                albName: service.loadBalancers[0].targetGroupArn
+                  ? await getTargetGroupAlb(
+                      service.loadBalancers[0].targetGroupArn
+                    )
+                  : `null`
+              }
             : `null`
-        }
       }))
     );
   } catch (error) {
@@ -104,12 +113,13 @@ async function describeServices(clusterName) {
   }
 }
 
-
-async function getEc2PrivateIp(instanceId){
-	const privateIp = await ec2.describeInstances({InstanceIds: [instanceId]}).promise()
-	return privateIp.Reservations[0].Instances[0].NetworkInterfaces[0].PrivateIpAddress
+async function getEc2PrivateIp(instanceId) {
+  const privateIp = await ec2
+    .describeInstances({ InstanceIds: [instanceId] })
+    .promise();
+  return privateIp.Reservations[0].Instances[0].NetworkInterfaces[0]
+    .PrivateIpAddress;
 }
-
 
 /**
  *
@@ -120,19 +130,24 @@ async function listContainerInstances(clusterName) {
   try {
     const containerInstances = await ecs
       .listContainerInstances({ cluster: clusterName })
-			.promise();
-		//console.log(containerInstances.containerInstanceArns)
-		const containerInstanceDesc = await ecs
-			.describeContainerInstances({cluster:clusterName, containerInstances:containerInstances.containerInstanceArns})
-			.promise()
-		const containerInstancesWithIps = Promise.all(containerInstanceDesc.containerInstances.map(async el => {
-			console.log(`test ${el.ec2InstanceId}`)
-			const additional_info = {
-				privateIp: await getEc2PrivateIp(el.ec2InstanceId),
-				clusterName: clusterName
-			}
-			return Object.assign(el,additional_info)
-		}));
+      .promise();
+    //console.log(containerInstances.containerInstanceArns)
+    const containerInstanceDesc = await ecs
+      .describeContainerInstances({
+        cluster: clusterName,
+        containerInstances: containerInstances.containerInstanceArns
+      })
+      .promise();
+    const containerInstancesWithIps = Promise.all(
+      containerInstanceDesc.containerInstances.map(async el => {
+        console.log(`test ${el.ec2InstanceId}`);
+        const additional_info = {
+          privateIp: await getEc2PrivateIp(el.ec2InstanceId),
+          clusterName: clusterName
+        };
+        return Object.assign(el, additional_info);
+      })
+    );
     return containerInstancesWithIps;
   } catch (error) {
     throw new Error(error);
@@ -142,14 +157,14 @@ async function listContainerInstances(clusterName) {
 export async function main(event, context) {
   const clusterName = event.pathParameters.name;
   const services = await listServices(clusterName);
-	const serviceDescriptions = await describeServices(clusterName);
-	console.log(serviceDescriptions)
-	const containerInstances = await listContainerInstances(clusterName);
-	console.log(containerInstances)
-	const combined = {
-		containerInstances,
-		serviceDescriptions
-	}
+  const serviceDescriptions = await describeServices(clusterName);
+  console.log(serviceDescriptions);
+  const containerInstances = await listContainerInstances(clusterName);
+  console.log(containerInstances);
+  const combined = {
+    containerInstances,
+    serviceDescriptions
+  };
   try {
     return {
       statusCode: 200,
