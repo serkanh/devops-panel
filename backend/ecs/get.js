@@ -29,6 +29,9 @@ async function listServices(clusterName) {
  * @return {Object}
  */
 async function getTargetGroupAlb(targetGroupArn){
+	if (targetGroupArn === undefined){
+		return null
+	}
 	try {
 		let albArn = await elbv2.describeTargetGroups({TargetGroupArns:[targetGroupArn]}).promise()
 		let alb = await elbv2.describeLoadBalancers({LoadBalancerArns:albArn.TargetGroups[0].LoadBalancerArns}).promise()
@@ -75,6 +78,9 @@ async function describeServices(clusterName){
 		return Promise.all(serviceDescriptions.services.map(async (service)=>({
 			serviceName: service.serviceName,
 			desiredCount: service.desiredCount,
+			createdAt: service.createdAt,
+			runningCount: service.runningCount,
+			pendingCount: service.pendingCount,
 			loadBalancer: {
 				// TODO if target group available get the associated load balancer
 				loadBalancerName:	service.loadBalancers[0] ? await getElbDnsName(service.loadBalancers) : `null`,
