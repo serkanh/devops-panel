@@ -83,7 +83,7 @@ async function describeServices(clusterName) {
       .describeServices({ services: serviceNames, cluster: clusterName })
       .promise();
     return Promise.all(
-      serviceDescriptions.services.map(async service => ({
+      serviceDescriptions.services.map(async service => console.log(service.loadBalancers.length) || ({
         serviceName: service.serviceName,
         desiredCount: service.desiredCount,
         createdAt: service.createdAt,
@@ -91,7 +91,7 @@ async function describeServices(clusterName) {
 				pendingCount: service.pendingCount,
 				//Check if there are any elb/alb if there is none return null
         loadBalancer:
-          service.loadBalancers.length > 1
+          service.loadBalancers.length >= 1
             ? {
                 loadBalancerName: service.loadBalancers[0]
                   ? await getElbDnsName(service.loadBalancers)
@@ -112,7 +112,11 @@ async function describeServices(clusterName) {
     throw new Error(error);
   }
 }
-
+/**
+ *
+ * @param {string} instanceId
+ * @return {string} PrivateIpAdress
+ */
 async function getEc2PrivateIp(instanceId) {
   const privateIp = await ec2
     .describeInstances({ InstanceIds: [instanceId] })
