@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "aws-sdk": "^2.439.0",
+    "serverless": "^1.41.0",
     "source-map-support": "^0.5.12"
   },
   "devDependencies": {

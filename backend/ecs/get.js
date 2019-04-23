@@ -1,10 +1,12 @@
 "use strict";
 import ECS from "aws-sdk/clients/ecs";
-import elbv2 from "aws-sdk/clients/elbv2";
-import { list } from "postcss";
+import Elbv2 from "aws-sdk/clients/elbv2";
+import Elb from "aws-sdk/clients/elb";
+
 
 const ecs = new ECS({ region: "us-east-1" });
-const elb = new elbv2({ region: "us-east-1" });
+const elbv2 = new Elbv2({ region: "us-east-1" });
+const elb = new Elb({ region: "us-east-1" });
 
 /**
  *
@@ -28,21 +30,42 @@ async function listServices(clusterName) {
  */
 async function getTargetGroupAlb(targetGroupArn){
 	try {
-		let alb = await elb.describeTargetGroups({TargetGroupArns:[targetGroupArn]}).promise()
-		//console.log(alb.TargetGroups[0])
-		return alb.TargetGroups[0].LoadBalancerArns[0]
+		let albArn = await elbv2.describeTargetGroups({TargetGroupArns:[targetGroupArn]}).promise()
+		let alb = await elbv2.describeLoadBalancers({LoadBalancerArns:albArn.TargetGroups[0].LoadBalancerArns}).promise()
+		//console.log(alb.LoadBalancers[0].DNSName)
+		return alb.LoadBalancers[0].DNSName
 	} catch (error) {
 		throw new Error(error)
 	}
 }
 
 
+async function getElbDnsName(elbObj){
+	//console.log(elbObj)
+	if (elbObj[0].loadBalancerName === undefined){
+		return null
+	}
+  const name = elbObj[0].loadBalancerName
+  try{
+		let lbnames = [ `${name}` ]
+	//	console.log(`lbnames ======> ${lbnames}`)
+
+		let elasticlb = await elb.describeLoadBalancers({LoadBalancerNames:lbnames}).promise()
+		//console.log(elasticlb)
+		//console.log(elasticlb)
+		return elasticlb.LoadBalancerDescriptions[0].DNSName;
+	} catch (error) {
+		console.log(error)
+	}
+}
+
 
 /**
  *
  * @param {string} clusterName
  * @returns {Object[]}
- * TODO: Find a way to be able to make async calls with ternary operator or Promise.all
+ * TODO: Clean up this code to make it more readable. Perahps check conditions with switch statements
+ * conditions to test whether there is a targetgroup, loadbalancer name or no alb/elb attached to the service
  */
 
 async function describeServices(clusterName){
@@ -50,14 +73,14 @@ async function describeServices(clusterName){
 		const serviceNames = await listServices(clusterName)
 		const serviceDescriptions = await ecs.describeServices({services:serviceNames, cluster:clusterName}).promise()
 		return Promise.all(serviceDescriptions.services.map(async (service)=>({
+			serviceName: service.serviceName,
 			desiredCount: service.desiredCount,
 			loadBalancer: {
 				// TODO if target group available get the associated load balancer
-				loadBalancerName:	service.loadBalancers[0].loadBalancerName ? service.loadBalancers[0].loadBalancerName: `null`,
+				loadBalancerName:	service.loadBalancers[0] ? await getElbDnsName(service.loadBalancers) : `null`,
 				containerPort:	service.loadBalancers[0].containerPort,
-				targetGroup:	service.loadBalancers[0].targetGroupArn ? await getTargetGroupAlb(service.loadBalancers[0].targetGroupArn) : `null`
+				albName:	service.loadBalancers[0].targetGroupArn ? await getTargetGroupAlb(service.loadBalancers[0].targetGroupArn) : `null`
 			},
-			serviceName: service.serviceName,
 		})))
 	} catch (error) {
 		throw new Error(error)
