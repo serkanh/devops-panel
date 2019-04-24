@@ -4,7 +4,8 @@ class EcsClusterDetails extends Component {
   state = {
     clusterArn: null,
 		clusterName: null,
-		containerInstances:[]
+		containerInstances:[],
+		serviceDescriptions: []
 	};
 
 	setStateAsync(state) {
@@ -19,30 +20,38 @@ class EcsClusterDetails extends Component {
     const { clusterArn } = this.props.location.state;
     const { clusterName } = this.props.match.params;
 		const {containerInstances,serviceDescriptions}  = await getClusterDetail(clusterName)
-    await this.setStateAsync({clusterName, clusterArn, containerInstances});
+    await this.setStateAsync({clusterName, clusterArn, containerInstances,serviceDescriptions});
   }
 
-  updateCluster = async (clusterName, clusterArn,clusterDetails) => {
-    this.setState(() => ({ clusterName, clusterArn, clusterDetails }));
-  };
+
 
   render() {
     console.log(this.state);
-    // const clusterName = this.state.clusterName;
-    // const clusterArn = this.state.clusterArn;
-		// const { containerInstances, serviceDescriptions } =  this.state.clusterDetails;
-	 // console.log(containerInstances)
     return (
       <div>
         <ul>
           <li>{this.state.clusterName}</li>
           <li>{this.state.clusterArn}</li>
         </ul>
-				<ol>
+				<ul>
 					{this.state.containerInstances.map((item,index)=>(
-						<li key='index'>{item.ec2InstanceId}</li>
+						<li key={item.ec2InstanceId}>
+						{item.ec2InstanceId}:
+						{item.privateIp}
+
+						</li>
+
 					))}
-				</ol>
+				</ul>
+
+				<ul>
+					{this.state.serviceDescriptions.map((item,index)=>(
+						<li key={index}>{item.serviceName}:
+						{item.loadBalancer.loadBalancerName || item.loadBalancer.albName}
+						</li>
+					))}
+				</ul>
+
       </div>
     );
   }
