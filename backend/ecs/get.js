@@ -68,6 +68,16 @@ async function getElbDnsName(elbObj) {
   }
 }
 
+
+async function describeTaskDefinition(taskDefinition){
+	try {
+		const taskdefinition = ecs.describeTaskDefinition({taskDefinition:taskDefinition}).promise()
+		return taskdefinition
+	} catch (error) {
+		console.log(error)
+	}
+}
+
 /**
  *
  * @param {string} clusterName
@@ -89,6 +99,7 @@ async function describeServices(clusterName) {
         createdAt: service.createdAt,
         runningCount: service.runningCount,
 				pendingCount: service.pendingCount,
+				taskDefinition: await describeTaskDefinition(service.taskDefinition),
 				//Check if there are any elb/alb if there is none return null
         loadBalancer:
           service.loadBalancers.length >= 1
