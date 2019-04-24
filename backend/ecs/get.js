@@ -3,11 +3,14 @@ import ECS from "aws-sdk/clients/ecs";
 import ELBV2 from "aws-sdk/clients/elbv2";
 import ELB from "aws-sdk/clients/elb";
 import EC2 from "aws-sdk/clients/ec2";
-
+import S3 from "aws-sdk/clients/s3";
+import AmazonS3uri from "amazon-s3-uri";
+// TODO: Parametize regions in serverless
 const ecs = new ECS({ region: "us-east-1" });
 const elbv2 = new ELBV2({ region: "us-east-1" });
 const elb = new ELB({ region: "us-east-1" });
 const ec2 = new EC2({ region: "us-east-1" });
+const s3 = new S3({ region: "us-east-1" });
 /**
  *
  * @param {string} clusterName
@@ -68,14 +71,15 @@ async function getElbDnsName(elbObj) {
   }
 }
 
-
-async function describeTaskDefinition(taskDefinition){
-	try {
-		const taskdefinition = ecs.describeTaskDefinition({taskDefinition:taskDefinition}).promise()
-		return taskdefinition
-	} catch (error) {
-		console.log(error)
-	}
+async function describeTaskDefinition(taskDefinition) {
+  try {
+    const taskdefinition = ecs
+      .describeTaskDefinition({ taskDefinition: taskDefinition })
+      .promise();
+    return taskdefinition;
+  } catch (error) {
+    console.log(error);
+  }
 }
 
 /**
@@ -93,31 +97,36 @@ async function describeServices(clusterName) {
       .describeServices({ services: serviceNames, cluster: clusterName })
       .promise();
     return Promise.all(
-      serviceDescriptions.services.map(async service => console.log(service.loadBalancers.length) || ({
-        serviceName: service.serviceName,
-        desiredCount: service.desiredCount,
-        createdAt: service.createdAt,
-        runningCount: service.runningCount,
-				pendingCount: service.pendingCount,
-				taskDefinition: await describeTaskDefinition(service.taskDefinition),
-				//Check if there are any elb/alb if there is none return null
-        loadBalancer:
-          service.loadBalancers.length >= 1
-            ? {
-                loadBalancerName: service.loadBalancers[0]
-                  ? await getElbDnsName(service.loadBalancers)
-                  : `null`,
-                containerPort: service.loadBalancers[0].containerPort
-                  ? service.loadBalancers[0].containerPort
-                  : `null`,
-                albName: service.loadBalancers[0].targetGroupArn
-                  ? await getTargetGroupAlb(
-                      service.loadBalancers[0].targetGroupArn
-                    )
-                  : `null`
-              }
-            : `null`
-      }))
+      serviceDescriptions.services.map(
+        async service =>
+          console.log(service.loadBalancers.length) || {
+            serviceName: service.serviceName,
+            desiredCount: service.desiredCount,
+            createdAt: service.createdAt,
+            runningCount: service.runningCount,
+            pendingCount: service.pendingCount,
+            taskDefinition: await describeTaskDefinition(
+              service.taskDefinition
+            ),
+            //Check if there are any elb/alb if there is none return null
+            loadBalancer:
+              service.loadBalancers.length >= 1
+                ? {
+                    loadBalancerName: service.loadBalancers[0]
+                      ? await getElbDnsName(service.loadBalancers)
+                      : `null`,
+                    containerPort: service.loadBalancers[0].containerPort
+                      ? service.loadBalancers[0].containerPort
+                      : `null`,
+                    albName: service.loadBalancers[0].targetGroupArn
+                      ? await getTargetGroupAlb(
+                          service.loadBalancers[0].targetGroupArn
+                        )
+                      : `null`
+                  }
+                : `null`
+          }
+      )
     );
   } catch (error) {
     throw new Error(error);
@@ -169,13 +178,30 @@ async function listContainerInstances(clusterName) {
   }
 }
 
+/**
+ *
+ * @param {string} s3Url
+ * @return {string} returns the body of s3 file
+ */
+async function readS3file(s3Url) {
+  try {
+    const s3UrlRe = /^[sS]3:\/\/(.*?)\/(.*)/;
+    const match = s3Url.match(s3UrlRe);
+		const params = { Bucket: match[1], Key: match[2] };
+		const file = await s3.getObject(params).promise()
+		console.log(file.Body.toString())
+  } catch (error) {
+    throw new Error(error);
+  }
+}
+
 export async function main(event, context) {
   const clusterName = event.pathParameters.name;
   const services = await listServices(clusterName);
   const serviceDescriptions = await describeServices(clusterName);
-  console.log(serviceDescriptions);
+  //console.log(serviceDescriptions);
   const containerInstances = await listContainerInstances(clusterName);
-  console.log(containerInstances);
+  // console.log(containerInstances);
   const combined = {
     containerInstances,
     serviceDescriptions
