@@ -5,7 +5,7 @@ import ELB from "aws-sdk/clients/elb";
 import EC2 from "aws-sdk/clients/ec2";
 import S3 from "aws-sdk/clients/s3";
 import AutoScaling from "aws-sdk/clients/autoscaling";
-import {getAgName} from "../util/";
+import { getAgName } from "../util/";
 import AmazonS3uri from "amazon-s3-uri";
 // TODO: Parametize regions in serverless
 const ecs = new ECS({ region: "us-east-1" });
@@ -148,7 +148,6 @@ async function getEc2PrivateIp(instanceId) {
     .PrivateIpAddress;
 }
 
-
 /**
  *
  * @param {string} instanceId
@@ -157,12 +156,20 @@ async function getEc2PrivateIp(instanceId) {
 async function getLaunchConfigUserData(instanceId) {
   const instanceDetail = await ec2
     .describeInstances({ InstanceIds: [instanceId] })
-		.promise();
-	const autoScalingGroupName = getAgName(instanceDetail.Reservations[0].Instances[0].Tags)
-	const asg = await as.describeAutoScalingGroups({AutoScalingGroupNames:[autoScalingGroupName]}).promise()
-	const lcName = asg.AutoScalingGroups[0].LaunchConfigurationName
-	const lc = await as.describeLaunchConfigurations({LaunchConfigurationNames:[lcName]}).promise()
-	return Buffer.from(lc.LaunchConfigurations[0].UserData,'base64').toString()
+    .promise();
+  const autoScalingGroupName = getAgName(
+    instanceDetail.Reservations[0].Instances[0].Tags
+  );
+  const asg = await as
+    .describeAutoScalingGroups({
+      AutoScalingGroupNames: [autoScalingGroupName]
+    })
+    .promise();
+  const lcName = asg.AutoScalingGroups[0].LaunchConfigurationName;
+  const lc = await as
+    .describeLaunchConfigurations({ LaunchConfigurationNames: [lcName] })
+    .promise();
+  return Buffer.from(lc.LaunchConfigurations[0].UserData, "base64").toString();
 }
 
 /**
@@ -208,9 +215,9 @@ async function readS3file(s3Url) {
   try {
     const s3UrlRe = /^[sS]3:\/\/(.*?)\/(.*)/;
     const match = s3Url.match(s3UrlRe);
-		const params = { Bucket: match[1], Key: match[2] };
-		const file = await s3.getObject(params).promise()
-		console.log(file.Body.toString())
+    const params = { Bucket: match[1], Key: match[2] };
+    const file = await s3.getObject(params).promise();
+    console.log(file.Body.toString());
   } catch (error) {
     throw new Error(error);
   }

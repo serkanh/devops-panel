@@ -22,10 +22,10 @@ const styles = theme => ({
   },
   icon: {
     color: "rgba(255, 255, 255, 0.54)"
-	},
-	li: {
-		width: 400
-	}
+  },
+  li: {
+    width: 400
+  }
 });
 
 class EcsClusterDetails extends Component {
@@ -66,8 +66,8 @@ class EcsClusterDetails extends Component {
           <ul>
             {this.state.containerInstances.map((item, index) => (
               <li className={classes.li} key={item.ec2InstanceId}>
-								{item.ec2InstanceId}: {item.privateIp}
-								{/* {item.ec2UserData} */}
+                {item.ec2InstanceId}: {item.privateIp}
+                {/* {item.ec2UserData} */}
               </li>
             ))}
           </ul>
