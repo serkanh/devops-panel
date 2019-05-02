@@ -8,11 +8,7 @@ class EcsClusterDetails extends Component {
 		serviceDescriptions: []
 	};
 
-	setStateAsync(state) {
-    return new Promise((resolve) => {
-      this.setState(state, resolve)
-    });
-  }
+
 
   async componentDidMount() {
     console.log(this.props.location.state);
@@ -20,7 +16,7 @@ class EcsClusterDetails extends Component {
     const { clusterArn } = this.props.location.state;
     const { clusterName } = this.props.match.params;
 		const {containerInstances,serviceDescriptions}  = await getClusterDetail(clusterName)
-    await this.setStateAsync({clusterName, clusterArn, containerInstances,serviceDescriptions});
+		this.setState({clusterName, clusterArn, containerInstances,serviceDescriptions})
   }
 
 
