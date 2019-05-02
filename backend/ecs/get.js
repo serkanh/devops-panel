@@ -4,6 +4,8 @@ import ELBV2 from "aws-sdk/clients/elbv2";
 import ELB from "aws-sdk/clients/elb";
 import EC2 from "aws-sdk/clients/ec2";
 import S3 from "aws-sdk/clients/s3";
+import AutoScaling from "aws-sdk/clients/autoscaling";
+import {getAgName} from "../util/";
 import AmazonS3uri from "amazon-s3-uri";
 // TODO: Parametize regions in serverless
 const ecs = new ECS({ region: "us-east-1" });
@@ -11,6 +13,7 @@ const elbv2 = new ELBV2({ region: "us-east-1" });
 const elb = new ELB({ region: "us-east-1" });
 const ec2 = new EC2({ region: "us-east-1" });
 const s3 = new S3({ region: "us-east-1" });
+const as = new AutoScaling({ region: "us-east-1" });
 /**
  *
  * @param {string} clusterName
@@ -145,6 +148,23 @@ async function getEc2PrivateIp(instanceId) {
     .PrivateIpAddress;
 }
 
+
+/**
+ *
+ * @param {string} instanceId
+ * @return {object} autoscaling group
+ */
+async function getLaunchConfigUserData(instanceId) {
+  const instanceDetail = await ec2
+    .describeInstances({ InstanceIds: [instanceId] })
+		.promise();
+	const autoScalingGroupName = getAgName(instanceDetail.Reservations[0].Instances[0].Tags)
+	const asg = await as.describeAutoScalingGroups({AutoScalingGroupNames:[autoScalingGroupName]}).promise()
+	const lcName = asg.AutoScalingGroups[0].LaunchConfigurationName
+	const lc = await as.describeLaunchConfigurations({LaunchConfigurationNames:[lcName]}).promise()
+	return Buffer.from(lc.LaunchConfigurations[0].UserData,'base64').toString()
+}
+
 /**
  *
  * @param {string} clusterName
@@ -164,9 +184,10 @@ async function listContainerInstances(clusterName) {
       .promise();
     const containerInstancesWithIps = Promise.all(
       containerInstanceDesc.containerInstances.map(async el => {
-        console.log(`test ${el.ec2InstanceId}`);
+        console.log(`test ${JSON.stringify(el)}`);
         const additional_info = {
           privateIp: await getEc2PrivateIp(el.ec2InstanceId),
+          ec2UserData: await getLaunchConfigUserData(el.ec2InstanceId),
           clusterName: clusterName
         };
         return Object.assign(el, additional_info);

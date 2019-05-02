@@ -67,6 +67,7 @@ class EcsClusterDetails extends Component {
             {this.state.containerInstances.map((item, index) => (
               <li className={classes.li} key={item.ec2InstanceId}>
 								{item.ec2InstanceId}: {item.privateIp}
+								{/* {item.ec2UserData} */}
               </li>
             ))}
           </ul>
