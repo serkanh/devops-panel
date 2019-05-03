@@ -1,30 +1,31 @@
 import React, { Component } from "react";
 import { getClusterDetail } from "./api/api";
 import { withStyles } from "@material-ui/core/styles";
-import GridList from "@material-ui/core/GridList";
-import GridListTile from "@material-ui/core/GridListTile";
-import GridListTileBar from "@material-ui/core/GridListTileBar";
-import ListSubheader from "@material-ui/core/ListSubheader";
-import IconButton from "@material-ui/core/IconButton";
-import { red } from "@material-ui/core/colors";
+import ExpansionPanel from "@material-ui/core/ExpansionPanel";
+import ExpansionPanelDetails from "@material-ui/core/ExpansionPanelDetails";
+import ExpansionPanelSummary from "@material-ui/core/ExpansionPanelSummary";
+import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+import Card from "@material-ui/core/Card";
+import CardActions from "@material-ui/core/CardActions";
+import CardContent from "@material-ui/core/CardContent";
+import Button from "@material-ui/core/Button";
+import Typography from "@material-ui/core/Typography";
 
 const styles = theme => ({
   root: {
-    display: "flex",
-    flexWrap: "wrap",
-    justifyContent: "space-around",
-    overflow: "hidden",
-    backgroundColor: theme.palette.background.paper
+    width: "100%"
   },
-  gridList: {
-    width: 500,
-    height: 450
+  heading: {
+    fontSize: theme.typography.pxToRem(15),
+    flexBasis: "33.33%",
+    flexShrink: 0
   },
-  icon: {
-    color: "rgba(255, 255, 255, 0.54)"
+  secondaryHeading: {
+    fontSize: theme.typography.pxToRem(15),
+    color: theme.palette.text.secondary
   },
-  li: {
-    width: 400
+  card: {
+    minWidth: 275
   }
 });
 
@@ -33,7 +34,14 @@ class EcsClusterDetails extends Component {
     clusterArn: null,
     clusterName: null,
     containerInstances: [],
-    serviceDescriptions: []
+    serviceDescriptions: [],
+    expanded: null
+  };
+
+  handleChange = panel => (event, expanded) => {
+    this.setState({
+      expanded: expanded ? panel : false
+    });
   };
 
   async componentDidMount() {
@@ -55,23 +63,76 @@ class EcsClusterDetails extends Component {
   render() {
     console.log(this.state);
     const { classes } = this.props;
+    const { expanded } = this.state;
+    const bull = <span className={classes.bullet}>•</span>;
     return (
       <div className={classes.root}>
-        <GridList cellHeight={180} className={classes.gridList}>
-          <GridListTile key="Subheader" cols={2} style={{ height: "auto" }}>
-            <ListSubheader component="div">
-              {this.state.clusterName}
-            </ListSubheader>
-          </GridListTile>
-          <ul>
-            {this.state.containerInstances.map((item, index) => (
-              <li className={classes.li} key={item.ec2InstanceId}>
-                {item.ec2InstanceId}: {item.privateIp}
-                {/* {item.ec2UserData} */}
-              </li>
-            ))}
-          </ul>
-        </GridList>
+        <h3>{this.state.clusterName} Services</h3>
+        {this.state.serviceDescriptions.map((service, index, arr) => (
+          <Card className={classes.card} key={index}>
+            <CardContent>
+              <Typography
+                className={classes.title}
+                color="textSecondary"
+                gutterBottom
+              >
+                {service.serviceName}
+              </Typography>
+
+              <Typography className={classes.pos} color="textSecondary">
+                {service.loadBalancer.loadBalancerName ||
+                  service.loadBalancer.albName}
+              </Typography>
+              <Typography component="p">
+                Desired Count: {service.desiredCount}
+                <br />
+                Running Count: {service.runningCount}
+                <br />
+                Pending Count: {service.pendingCount}
+                <br />
+              </Typography>
+              <br />
+              <ExpansionPanel
+                expanded={expanded === service.serviceName}
+                onChange={this.handleChange(service.serviceName)}
+              >
+                <ExpansionPanelSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography className={classes.heading}>
+                    Task Definition
+                  </Typography>
+                  <Typography className={classes.secondaryHeading}>
+                    Task Definition Detail
+                  </Typography>
+                </ExpansionPanelSummary>
+                <ExpansionPanelDetails>
+                  <ul>
+                    {service.taskDefinition.taskDefinition.containerDefinitions.map(
+                      (item, index, arr) => (
+                        <li key={item.name}><h2>{item.name}</h2>
+												{item.environment.map((e,index)=>(
+													<p key={index}><b>{e.name}: </b> {e.value}</p>
+												))}</li>
+                      )
+                    )}
+                  </ul>
+                </ExpansionPanelDetails>
+              </ExpansionPanel>
+            </CardContent>
+          </Card>
+          // 		// <li key={index}>{service.serviceName}</li>
+          // 		<ExpansionPanel key={index} expanded={expanded === service.serviceName} onChange={this.handleChange(service.serviceName)}>
+          //   <ExpansionPanelSummary expandIcon={<ExpandMoreIcon />}>
+          //     <Typography className={classes.heading}>{service.serviceName}</Typography>
+          //     <Typography className={classes.secondaryHeading}>I am an expansion panel</Typography>
+          //   </ExpansionPanelSummary>
+          //   <ExpansionPanelDetails>
+          //     <Typography>
+          //       Nulla facilisi. Phasellus sollicitudin nulla et quam mattis feugiat. Aliquam eget
+          //       maximus est, id dignissim quam.
+          //     </Typography>
+          //   </ExpansionPanelDetails>
+          // </ExpansionPanel>
+        ))}
       </div>
     );
   }

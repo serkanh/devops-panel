@@ -153,7 +153,7 @@ async function getEc2PrivateIp(instanceId) {
  * @param {string} instanceId
  * @return {object} autoscaling group
  */
-async function getLaunchConfigUserData(instanceId) {
+async function getAgData(instanceId) {
   const instanceDetail = await ec2
     .describeInstances({ InstanceIds: [instanceId] })
     .promise();
@@ -169,7 +169,13 @@ async function getLaunchConfigUserData(instanceId) {
   const lc = await as
     .describeLaunchConfigurations({ LaunchConfigurationNames: [lcName] })
     .promise();
-  return Buffer.from(lc.LaunchConfigurations[0].UserData, "base64").toString();
+	const userData = Buffer.from(lc.LaunchConfigurations[0].UserData, "base64").toString();
+
+	return {
+		autoScalingGroupName,
+		lcName,
+		userData
+	}
 }
 
 /**
@@ -194,7 +200,7 @@ async function listContainerInstances(clusterName) {
         console.log(`test ${JSON.stringify(el)}`);
         const additional_info = {
           privateIp: await getEc2PrivateIp(el.ec2InstanceId),
-          ec2UserData: await getLaunchConfigUserData(el.ec2InstanceId),
+          agData: await getAgData(el.ec2InstanceId),
           clusterName: clusterName
         };
         return Object.assign(el, additional_info);
